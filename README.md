@@ -53,6 +53,7 @@ module.exports = {
     whitelisted_role_id: '<your_whitelisted_role_id>',
     mc_server_ip: '<your_minecraft_server_ip>',
     mc_server_port: <your_minecraft_server_port>,
+    mc_query_port: <your_minecraft_server_query_port>,
     rcon_port: <your_rcon_port>,
     rcon_password: "<your_rcon_password>",
     discord_webhook_url: '<your_discord_webhook_url>',
