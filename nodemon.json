@@ -1,0 +1,3 @@
+{
+    "ignore": ["registrations.json", "id.json", "node_modules", "package-lock.json", "package.json", "README.md", "nodemon.json"]
+}
