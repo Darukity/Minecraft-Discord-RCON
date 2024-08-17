@@ -11,6 +11,9 @@ const request = require('request');
 const mcServer = require('minecraft-server-util');
 const Rcon = require('rcon-client').Rcon;
 
+const Query = require("minecraft-query");
+const q = new Query({host: config.mc_server_ip, port: config.mc_query_port, timeout: 7500});
+
 const client = new Rcon({
   host: config.mc_server_ip,
   port: config.rcon_port,
@@ -67,21 +70,45 @@ bot.on("ready", async() => {
           console.error(error);
       });
     });
-
-    if(config.mc_server_ip != "127.0.0.1" && config.mc_server_ip != "localhost") {
       async function setStatus() {
           let status = 0;
           while(true){
             switch(status) {
               case 0: {
-                mcServer.queryFull(config.mc_server_ip, config.mc_server_port)
-                    .then((result) => {
-                      parsedJSON = JSON.parse(JSON.stringify(result))
-                      bot.user.setPresence({activities: [{type: ActivityType.Watching, name:`serveur mc: ${parsedJSON.players.online}/${parsedJSON.players.max} joueurs connectés`}]})
-                      status = 1;
-                    })
-                    .catch((error) => console.error(error));
+                // {
+                //   motd: 'A Minecraft Server',
+                //   gametype: 'SMP',
+                //   game_id: 'MINECRAFT',
+                //   version: '1.21.1',
+                //   plugins: 'Paper on 1.21.1-R0.1-SNAPSHOT',
+                //   map: 'world',
+                //   online_players: '0',
+                //   max_players: '20',
+                //   port: '25566',
+                //   players: []
+                // }
+                // {
+                //   motd: 'A Minecraft Server',
+                //   gametype: 'SMP',
+                //   map: 'world',
+                //   online_players: '0',
+                //   max_players: '20'
+                // }
+                q.fullStat().then((result) => {
+                  bot.user.setPresence(
+                    {
+                      activities: [
+                      {
+                        type: ActivityType.Watching, 
+                        name:`serveur mc: ${result.online_players}/${result.max_players} joueurs connectés`
+                      }
+                    ]
                   }
+                )
+                  status = 1;
+                }).catch((error) => console.error(error));
+                break;
+              }
               case 1: {
                 bot.user.setPresence({activities: [{type: ActivityType.Playing, name:`/help`}]})
                 status = 0;
@@ -91,12 +118,7 @@ bot.on("ready", async() => {
             //console.log(`updated`)
           }
         }
-          setStatus()
-    }
-    else {
-      bot.user.setPresence({activities: [{type: ActivityType.Playing, name:`executing on localhost try /help`}]})
-    }
-
+          setStatus();
 })
 
 //{/} commands handle
@@ -110,32 +132,22 @@ bot.on('interactionCreate', async interaction => {
     await interaction.reply('Pong!');
   }
   if(interaction.commandName === 'players'){
-    if(config.mc_server_ip != "127.0.0.1" && config.mc_server_ip != "localhost") {
-      if(interaction.channelId != config.rcon_channel){
-        mcServer.queryFull(config.mc_server_ip, config.mc_server_port)
-        .then((result) => {
-            parsedJSON = JSON.parse(JSON.stringify(result))
-            message = "";
-            players = parsedJSON.players.list;
+    q.fullStat().then((result) => {
+      message = "";
+      players = result.players;
 
-            if(players[0] != undefined){
-                for(let i=0;i<players.length; i++){
-                    message += players[i];
-                    if(i != players.length-1){
-                        message += ", "
-                    }
-                }
-                interaction.reply(`Liste des joueurs: ${message}`)
-            } else {
-              interaction.reply(`Aucun joueur n'est connecté`)
-            }        
-        })
-        .catch((error) => console.error(error));
-      }
-    }
-    else {
-      interaction.reply(`La commande ne fonctionne pas sur localhost`)
-    }
+      if(players[0] != undefined){
+          for(let i=0;i<players.length; i++){
+              message += players[i];
+              if(i != players.length-1){
+                  message += ", "
+              }
+          }
+          interaction.reply(`Liste des joueurs: ${message}`)
+      } else {
+        interaction.reply(`Aucun joueur n'est connecté`)
+      }        
+    }).catch((error) => console.error(error));
   }
 
   if(interaction.commandName === 'register'){
